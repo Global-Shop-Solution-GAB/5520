@@ -1,0 +1,167 @@
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Bix
+'Brunswick Metalworks
+'Purpose, populate GCG_5520_ORD and GCG_5520_QTE with empty values for UM
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.CallSub(PopulateQuoteDT)
+F.Intrinsic.Control.CallSub(PopulateOrderDT)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.PopulateQuoteDT.Start
+V.Local.sError.Declare
+V.Local.sFilter.Declare
+V.Local.iQte.Declare
+V.Local.iLine.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Data.DataTable.CreateFromSQL("dtQuotes","con","select QUOTE_NO as QUOTE from V_QUOTE_HEADER;")
+F.Data.DataTable.CreateFromSQL("dtQuoteLines","con","select QUOTE_NO as QUOTE, RECORD_NO as LINE from V_QUOTE_LINES;")
+F.Data.DataTable.CreateFromSQL("dtQuoteSkip","con","select QUOTE, LINE, UM, QTY, UNIT_PRICE from GCG_5520_QTE;")
+F.ODBC.Connection!con.Close
+
+F.Data.DataView.Create("dtQuoteLines","dvQuote",22,,"LINE asc")
+F.Data.DataView.Create("dtQuoteSkip","dvQuote",22,,"LINE asc")
+F.Intrinsic.Control.For(V.Local.iQte,0,V.DataTable.dtQuotes.RowCount--,1)
+	F.Intrinsic.String.Build("QUOTE = '{0}'",V.DataTable.dtQuotes(V.Local.iQte).QUOTE!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtQuoteLines","dvQuote",V.Local.sFilter)
+	F.Intrinsic.Control.For(V.Local.iLine,0,V.DataView.dtQuoteLines!dvQuote.RowCount--,1)
+		F.Intrinsic.String.Build("QUOTE = '{0}' and LINE = '{1}'",V.DataView.dtQuoteLines!dvQuote(V.Local.iLine).QUOTE!FieldVal,V.DataView.dtQuoteLines!dvQuote(V.Local.iLine).LINE!FieldVal,V.Local.sFilter)
+		F.Data.DataView.SetFilter("dtQuoteSkip","dvQuote",V.Local.sFilter)
+		F.Intrinsic.Control.If(V.DataView.dtQuoteSkip!dvQuote.RowCount,=,0)
+			F.Data.DataTable.AddRow("dtQuoteSkip","QUOTE",V.DataView.dtQuoteLines!dvQuote(V.Local.iLine).QUOTE!FieldVal,"LINE",V.DataView.dtQuoteLines!dvQuote(V.Local.iLine).LINE!FieldVal,"UM","","QTY",0,"UNIT_PRICE",0)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iLine)
+	F.Intrinsic.String.Build("QUOTE = '{0}' and LINE = ''",V.DataTable.dtQuotes(V.Local.iQte).QUOTE!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtQuoteSkip","dvQuote",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtQuoteSkip!dvQuote.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtQuoteSkip","QUOTE",V.DataTable.dtQuotes(V.Local.iQte).QUOTE!FieldVal,"LINE","","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iQte)
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Data.DataTable.SaveToDB("dtQuoteSkip","con","GCG_5520_QTE","QUOTE*!*LINE",256)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PopulateQuoteDT.End
+
+Program.Sub.PopulateOrderDT.Start
+V.Local.sError.Declare
+V.Local.sFilter.Declare
+V.Local.iOrd.Declare
+V.Local.iLine.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Data.DataTable.CreateFromSQL("dtOrders","con","select ORDER_NO from V_ORDER_HEADER;")
+F.Data.DataTable.CreateFromSQL("dtOrdersHist","con","select distinct ORDER_NO from V_ORDER_HIST_HEAD;")
+F.Data.DataTable.CreateFromSQL("dtOrderLines","con","select ORDER_NO, RECORD_NO as LINE from V_ORDER_LINES;")
+F.Data.DataTable.CreateFromSQL("dtOrderHistLines","con","select distinct ORDER_NO, ORDER_LINE as LINE from V_ORDER_HIST_LINE;")
+F.Data.DataTable.CreateFromSQL("dtShipments","con","select distinct ORDER_NO from V_SHIPMENT_HEADER;")
+F.Data.DataTable.CreateFromSQL("dtShipmentLines","con","select distinct ORDER_NO, ORDER_REC as LINE from V_SHIPMENT_LINES;")
+F.Data.DataTable.CreateFromSQL("dtOrderSkip","con","select ORDER_NO, LINE, UM, QTY, UNIT_PRICE from GCG_5520_ORD;")
+F.ODBC.Connection!con.Close
+
+F.Data.DataView.Create("dtOrderLines","dvOrder",22,,"LINE asc")
+F.Data.DataView.Create("dtOrderSkip","dvOrder",22,,"LINE asc")
+F.Intrinsic.Control.For(V.Local.iOrd,0,V.DataTable.dtOrders.RowCount--,1)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}'",V.DataTable.dtOrders(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderLines","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.For(V.Local.iLine,0,V.DataView.dtOrderLines!dvOrder.RowCount--,1)
+		F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '{1}'",V.DataView.dtOrderLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,V.DataView.dtOrderLines!dvOrder(V.Local.iLine).LINE!FieldVal,V.Local.sFilter)
+		F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+		F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+			F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataView.dtOrderLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,"LINE",V.DataView.dtOrderLines!dvOrder(V.Local.iLine).LINE!FieldVal,"UM","","QTY",0,"UNIT_PRICE",0)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iLine)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = ''",V.DataTable.dtOrders(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtOrders(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '   0'",V.DataTable.dtOrders(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtOrders(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","   0","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iOrd)
+F.Data.DataTable.Close("dtOrders")
+F.Data.DataTable.Close("dtOrderLines")
+
+F.Data.DataView.Create("dtOrderHistLines","dvOrder",22,,"LINE asc")
+F.Intrinsic.Control.For(V.Local.iOrd,0,V.DataTable.dtOrdersHist.RowCount--,1)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}'",V.DataTable.dtOrdersHist(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderHistLines","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.For(V.Local.iLine,0,V.DataView.dtOrderHistLines!dvOrder.RowCount--,1)
+		F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '{1}'",V.DataView.dtOrderHistLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,V.DataView.dtOrderHistLines!dvOrder(V.Local.iLine).LINE!FieldVal,V.Local.sFilter)
+		F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+		F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+			F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataView.dtOrderHistLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,"LINE",V.DataView.dtOrderHistLines!dvOrder(V.Local.iLine).LINE!FieldVal,"UM","","QTY",0,"UNIT_PRICE",0)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iLine)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = ''",V.DataTable.dtOrdersHist(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtOrdersHist(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '   0'",V.DataTable.dtOrdersHist(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtOrdersHist(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","   0","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iOrd)
+F.Data.DataTable.Close("dtOrdersHist")
+F.Data.DataTable.Close("dtOrderHistLines")
+
+F.Data.DataView.Create("dtShipmentLines","dvOrder",22,,"LINE asc")
+F.Intrinsic.Control.For(V.Local.iOrd,0,V.DataTable.dtShipments.RowCount--,1)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}'",V.DataTable.dtShipments(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtShipmentLines","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.For(V.Local.iLine,0,V.DataView.dtShipmentLines!dvOrder.RowCount--,1)
+		F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '{1}'",V.DataView.dtShipmentLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,V.DataView.dtShipmentLines!dvOrder(V.Local.iLine).LINE!FieldVal,V.Local.sFilter)
+		F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+		F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+			F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataView.dtShipmentLines!dvOrder(V.Local.iLine).ORDER_NO!FieldVal,"LINE",V.DataView.dtShipmentLines!dvOrder(V.Local.iLine).LINE!FieldVal,"UM","","QTY",0,"UNIT_PRICE",0)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iLine)
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = ''",V.DataTable.dtShipments(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtShipments(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("ORDER_NO = '{0}' and LINE = '   0'",V.DataTable.dtShipments(V.Local.iOrd).ORDER_NO!FieldVal,V.Local.sFilter)
+	F.Data.DataView.SetFilter("dtOrderSkip","dvOrder",V.Local.sFilter)
+	F.Intrinsic.Control.If(V.DataView.dtOrderSkip!dvOrder.RowCount,=,0)
+		F.Data.DataTable.AddRow("dtOrderSkip","ORDER_NO",V.DataTable.dtShipments(V.Local.iOrd).ORDER_NO!FieldVal,"LINE","   0","UM","","QTY",0,"UNIT_PRICE",0)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Next(V.Local.iOrd)
+F.Data.DataTable.Close("dtShipments")
+F.Data.DataTable.Close("dtShipmentLines")
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Data.DataTable.SaveToDB("dtOrderSkip","con","GCG_5520_ORD","ORDER_NO*!*LINE",256)
+F.ODBC.Connection!con.Close
+F.Data.DataTable.Close("dtOrderSkip")
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PopulateOrderDT.End

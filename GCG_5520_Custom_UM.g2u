@@ -1,0 +1,165 @@
+Program.Sub.ScreenSU.Start
+Gui.F_Customer_UM..Create
+Gui.F_Customer_UM..Size(3945,1290)
+Gui.F_Customer_UM..MinX(0)
+Gui.F_Customer_UM..MinY(0)
+Gui.F_Customer_UM..Position(0,0)
+Gui.F_Customer_UM..BackColor(-2147483633)
+Gui.F_Customer_UM..MousePointer(0)
+Gui.F_Customer_UM..Event(UnLoad,F_Customer_UM_UnLoad)
+Gui.F_Customer_UM..MaxButton(False)
+Gui.F_Customer_UM..Sizeable(False)
+Gui.F_Customer_UM.txtUM.Create(TextBox,"",True,780,300,0,150,405,True,0,"Arial",8,-2147483643,1)
+Gui.F_Customer_UM.txtUM.Locked(True)
+Gui.F_Customer_UM.lblUM.Create(Label,"UM",True,435,255,0,180,195,True,0,"Arial",8,-2147483633,0)
+Gui.F_Customer_UM.lblUM.DefaultValue("")
+Gui.F_Customer_UM.cmdBRW.Create(Button)
+Gui.F_Customer_UM.cmdBRW.Size(465,450)
+Gui.F_Customer_UM.cmdBRW.Position(1155,270)
+Gui.F_Customer_UM.cmdBRW.Caption("^")
+Gui.F_Customer_UM.cmdBRW.Event(Click,cmdBRW_Click)
+Gui.F_Customer_UM.cmdSave.Create(Button)
+Gui.F_Customer_UM.cmdSave.Size(1125,375)
+Gui.F_Customer_UM.cmdSave.Position(2595,315)
+Gui.F_Customer_UM.cmdSave.Caption("Save")
+Gui.F_Customer_UM.cmdSave.Event(Click,cmdSave_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.sCust.Declare
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Bix
+'Date: 5/7/2019
+'Custom UM stuff
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,14341)
+	'Customer Options Populate
+	V.Passed.000067.Set("Customer UM")
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,14342)
+	'Customer Options Script 1
+	F.Intrinsic.Control.CallSub(CustomerUMScreen)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,14350)
+	'Customer Master Populate
+	'Write Customer # to temp file
+	F.Intrinsic.Control.CallSub(WriteCustToFile,"Cust",V.Passed.000002)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.WriteCustToFile.Start
+'Write Customer # to file to be used on the options screen
+V.Local.sError.Declare
+V.Local.sFile.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("{0}\GSS{1}{2}CUSTNUMPLCHLDR",V.Caller.TempDir,V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.String2File(V.Local.sFile,V.Args.Cust)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.WriteCustToFile.End
+
+Program.Sub.CustomerUMScreen.Start
+V.Local.sError.Declare
+V.Local.sFile.Declare
+V.Local.sSQL.Declare
+V.Local.sCaption.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("{0}\GSS{1}{2}CUSTNUMPLCHLDR",V.Caller.TempDir,V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.File2String(V.Local.sFile,V.Global.sCust)
+
+F.Intrinsic.String.Build("select UM from GCG_5520_CUST where CUST = '{0}';",V.Global.sCust,V.Local.sSQL)
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.OpenRecordsetRW("rstCustUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstCustUM.EOF,=,False)
+	Gui.F_Customer_UM.txtUM.Text(V.ODBC.con!rstCustUM.FieldValTrim!UM)
+F.Intrinsic.Control.Endif
+F.ODBC.con!rstCustUM.Close
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.String.Build("Cust: {0}",V.Global.sCust,V.Local.sCaption)
+Gui.F_Customer_UM..Caption(V.Local.sCaption)
+Gui.F_Customer_UM..Show
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.CustomerUMScreen.End
+
+Program.Sub.F_Customer_UM_UnLoad.Start
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.F_Customer_UM_UnLoad.End
+
+Program.Sub.cmdBRW_Click.Start
+V.Local.sError.Declare
+V.Local.sRet.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.UI.Browser("Custom UMs","con","select UM, DESCRIPTION from GCG_5520_UM;","UM*!*Description","10*!*50",V.Local.sRet)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.If(V.Local.sRet.IsNotCancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.F_Customer_UM.txtUM.Text(V.Local.sRet(0))
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdBRW_Click.End
+
+Program.Sub.cmdSave_Click.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("select CUST, UM from GCG_5520_CUST where CUST = '{0}';",V.Global.sCust,V.Local.sSQL)
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.OpenRecordsetRW("rstCustUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstCustUM.EOF)
+	F.ODBC.con!rstCustUM.AddNew
+	F.ODBC.con!rstCustUM.Set!CUST(V.Global.sCust)
+F.Intrinsic.Control.Endif
+F.Intrinsic.Control.If(V.ODBC.con!rstCustUM.FieldVal!UM,!=,V.Screen.F_Customer_UM!txtUM.Text)
+	F.ODBC.con!rstCustUM.Set!UM(V.Screen.F_Customer_UM!txtUM.Text)
+	F.ODBC.con!rstCustUM.Update
+	F.Intrinsic.UI.Msgbox("Saved!")
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstCustUM.Close
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdSave_Click.End

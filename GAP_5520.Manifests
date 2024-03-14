@@ -1,0 +1,5 @@
+1GCG_5520_CUST$!$2018.1$!$3$!$False$!$$!$0$!$False$!$0%!%2CUST#!#CHAR(6)#!#True#!#False#!#False#!#$!$UM#!#CHAR(4)
+)#!#False#!#False#!#False#!#$!$%!%3%!%%!%5GAP_5520%!%^*!*^1GCG_5520_ORD$!$2018.1$!$3$!$False$!$$!$0$!$False$!$0%!%2ORDER_NO#!#CHAR(7)#!#True#!#False#!#False#!#$!$LINE#!#CHAR(4)#!#True#!#False#!#False#!#$!$UM#!#CHAR(4)#!#True#!#False#!#False#!#$!$QTY#!#DOUBLE#!#True#!#False#!#False#!#$!$UNIT_PRICE#!#DOUBLE
+#!#False#!#False#!#False#!#$!$%!%3%!%%!%5GAP_5520%!%^*!*^1GCG_5520_QTE$!$2018.1$!$3$!$False$!$$!$0$!$False$!$0%!%2QUOTE#!#CHAR(7)#!#True#!#False#!#False#!#$!$LINE#!#CHAR(4)#!#True#!#False#!#False#!#$!$UM#!#CHAR(4)#!#True#!#False#!#False#!#$!$QTY#!#DOUBLE#!#True#!#False#!#False#!#$!$UNIT_PRICE#!#DOUBLE
+#!#False#!#False#!#False#!#$!$%!%3%!%%!%5GAP_5520%!%^*!*^1GCG_5520_UM$!$2018.1$!$3$!$False$!$$!$0$!$False$!$0%!%2UM#!#CHAR(4)#!#True#!#False#!#False#!#$!$DESCRIPTION#!#CHAR(30)
+)#!#False#!#False#!#False#!#$!$%!%3%!%%!%5GAP_5520%!%^*!*^

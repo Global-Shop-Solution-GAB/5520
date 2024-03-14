@@ -1,0 +1,623 @@
+Program.Sub.Preflight.Start
+V.Global.sOrder.Declare
+V.Global.sLine.Declare
+V.Global.fQty.Declare
+V.Global.fPrice.Declare
+V.Global.fWeight.Declare
+V.Global.sPart.Declare
+V.Global.sLoc.Declare
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Bix
+'Date: 5/9/2019
+'GCG_5520_Order_Lines.g2u
+V.Local.sError.Declare
+V.Local.sQuote.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,10721)
+	'Quote Header Screen Load Hook
+	F.Intrinsic.Control.CallSub(UpdateNewestSalesOrderCustomUM)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12010)
+	'Order Lines Populate Hook
+	F.Intrinsic.Control.If(V.Caller.Switches,=,"O","or",V.Caller.Switches,=,"N")
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-TEXT-1,"LOCK",0)
+		F.Intrinsic.UI.ChangeCallerProperty(V.Passed.GAB-BTN-1,"LOCK",0)
+	F.Intrinsic.Control.EndIf
+	
+	'setup GAB controls to be used on Order Lines screen
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PL","282")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PL","210")
+	F.Intrinsic.Variable.SetProperty("GAB-BTN-1","PL","325")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PL","420")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PL","355")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-3","PL","420")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PL","347")
+	
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PT","200")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PT","202")
+	F.Intrinsic.Variable.SetProperty("GAB-BTN-1","PT","198")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PT","200")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PT","202")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-3","PT","225")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PT","227")
+	
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-1","PW","40")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-1","PW","55")
+	F.Intrinsic.Variable.SetProperty("GAB-BTN-1","PW","19")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-2","PW","85")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-2","PW","55")
+	F.Intrinsic.Variable.SetProperty("GAB-TEXT-3","PW","85")
+	F.Intrinsic.Variable.SetProperty("GAB-LBL-3","PW","65")
+	
+	F.Intrinsic.Variable.SetProperty("GAB-BTN-1","PH","19")
+	
+	V.Passed.GAB-TEXT-1.Set("")
+	V.Passed.GAB-LBL-1.Set("Custom UM")
+	V.Passed.GAB-BTN-1.Set("")
+	V.Passed.GAB-TEXT-2.Set("")
+	V.Passed.GAB-LBL-2.Set("Custom Qty")
+	V.Passed.GAB-TEXT-3.Set("")
+	V.Passed.GAB-LBL-3.Set("Custom Price")
+	
+	F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrder)
+	F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sLine,"0",V.Global.sLine)
+	V.Global.fQty.Set(V.Passed.000007)
+	V.Global.fPrice.Set(V.Passed.000009)
+	V.Global.fWeight.Set(V.Passed.000016)
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+	V.Global.sLoc.Set(V.Passed.000054)
+	F.Intrinsic.Control.CallSub(GetCustomUM)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12120,"or",V.Caller.Hook,=,12140)
+	'Order Lines Update Order Qty Hook or Order Lines Update Current Price Hook
+	V.Global.fQty.Set(V.Passed.000007)
+	V.Global.fPrice.Set(V.Passed.000009)
+	V.Global.fWeight.Set(V.Passed.000016)
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+	V.Global.sLoc.Set(V.Passed.000054)
+	F.Intrinsic.Control.CallSub(UpdateQtyAndPrice)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12231)
+	'Order Lines Post Save Hook
+	F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrder)
+	F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sLine,"0",V.Global.sLine)
+	F.Intrinsic.Control.CallSub(SaveCustomUM)
+	V.Passed.GAB-TEXT-1.Set("")
+	V.Passed.GAB-TEXT-2.Set("")
+	V.Passed.GAB-TEXT-3.Set("")
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12431)
+	'Order Lines GAB-BTN-1 Hook
+	F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrder)
+	F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sLine,"0",V.Global.sLine)
+	V.Global.fQty.Set(V.Passed.000007)
+	V.Global.fPrice.Set(V.Passed.000009)
+	V.Global.fWeight.Set(V.Passed.000016)
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+	V.Global.sLoc.Set(V.Passed.000054)
+	F.Intrinsic.Control.CallSub(BRWButtonClicked)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12437)
+	'Order Lines GAB-TEXT-1 Hook
+	F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,=,"")
+		V.Passed.GAB-TEXT-2.Set("")
+		V.Passed.GAB-TEXT-3.Set("")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrder)
+	F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sLine,"0",V.Global.sLine)
+	V.Global.fQty.Set(V.Passed.000007)
+	V.Global.fPrice.Set(V.Passed.000009)
+	V.Global.fWeight.Set(V.Passed.000016)
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+	V.Global.sLoc.Set(V.Passed.000054)
+	F.Intrinsic.Control.CallSub(UMTextBoxLostFocus)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12705)
+	'Order Lines Line changed Hook
+	F.Intrinsic.String.LPad(V.Passed.000060,"0",7,V.Global.sOrder)
+	F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sLine,"0",V.Global.sLine)
+	V.Global.fQty.Set(V.Passed.000007)
+	V.Global.fPrice.Set(V.Passed.000009)
+	V.Global.fWeight.Set(V.Passed.000016)
+	F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+	V.Global.sLoc.Set(V.Passed.000054)
+	F.Intrinsic.Control.CallSub(RecordCustomUMToFile)
+	V.Passed.GAB-TEXT-1.Set("")
+	V.Passed.GAB-TEXT-2.Set("")
+	V.Passed.GAB-TEXT-3.Set("")
+	F.Intrinsic.Control.CallSub(GetCustomUM)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,17342)
+	'Quote Won/Loss Post Save
+	F.Intrinsic.Control.CallSub(UpdateNewestSalesOrderCustomUM)
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,17343)
+	'Mark Quote Lines Post Save
+	F.Intrinsic.String.LPad(V.Passed.QUOTE,"0",7,V.Local.sQuote)
+	F.Intrinsic.Control.CallSub(WriteQuoteNumberToFile,"Quote",V.Local.sQuote)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.GetCustomUM.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sQuote.Declare
+V.Local.sQLine.Declare
+V.Local.sCust.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Global.sPart.Trim,=,"","or",V.Global.fQty,=,0,V.Global.fPrice,=,0)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+'Check table for Orders for UM
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.String.Build("select UM from GCG_5520_ORD where ORDER_NO = '{0}' and LINE = '{1}';",V.Global.sOrder,V.Global.sLine,V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRO("rstOrdUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstOrdUM.FieldValTrim!UM,=,"")
+	F.Intrinsic.Control.If(V.Caller.Switches,=,"O","or",V.Caller.Switches,=,"N")
+		'If Order Line doesn't have a UM saved, check Quote and Quote Line
+		F.Intrinsic.String.Build("select QUOTE from V_ORDER_HEADER where ORDER_NO = '{0}';",V.Global.sOrder,V.Local.sSQL)
+		F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sQuote)
+		F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+			'Order has been saved, get quote line
+			F.Intrinsic.String.Build("select ORIG_ORDER_LINE from V_ORDER_LINES where ORDER_NO = '{0}' and RECORD_NO = '{1}';",V.Global.sOrder,V.Global.sLine,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sQLine)
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+				'Order line has been saved, see if quote line has a custom UM saved
+				F.Intrinsic.String.Build("select UM from GCG_5520_QTE where QUOTE = '{0}' and LINE = '{1}';",V.Local.sQuote,V.Local.sQLine,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenRecordsetRO("rstQteUM",V.Local.sSQL)
+				F.Intrinsic.Control.If(V.ODBC.con!rstQteUM.FieldValTrim!UM,!=,"")
+					'Populate with Quote UM and notify User
+					F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,V.ODBC.con!rstQteUM.FieldValTrim!UM)
+						V.Passed.GAB-TEXT-1.Set(V.ODBC.con!rstQteUM.FieldValTrim!UM)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				F.ODBC.con!rstQteUM.Close
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,=,"")
+			'If Quote Line doesn't have a UM saved, check Cust
+			F.Intrinsic.String.Build("select CUSTOMER from V_ORDER_HEADER where ORDER_NO = '{0}';",V.Global.sOrder,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sCust)
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+				F.Intrinsic.String.Build("select UM from GCG_5520_CUST where CUST = '{0}';",V.Local.sCust,V.Local.sSQL)
+				F.ODBC.Connection!con.OpenRecordsetRO("rstCustUM",V.Local.sSQL)
+				F.Intrinsic.Control.If(V.ODBC.con!rstCustUM.FieldValTrim!UM,!=,"")
+					'Populate with Cust UM and notify user
+					F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,V.ODBC.con!rstCustUM.FieldValTrim!UM)
+						V.Passed.GAB-TEXT-1.Set(V.ODBC.con!rstCustUM.FieldValTrim!UM)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				F.ODBC.con!rstCustUM.Close
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,V.ODBC.con!rstOrdUM.FieldValTrim!UM)
+		V.Passed.GAB-TEXT-1.Set(V.ODBC.con!rstOrdUM.FieldValTrim!UM)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstOrdUM.Close
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,"")
+	F.Intrinsic.Control.CallSub(UpdateQtyAndPrice)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.GetCustomUM.End
+
+Program.Sub.UpdateQtyAndPrice.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sRet.Declare
+V.Local.sQty.Declare
+V.Local.sPrice.Declare
+V.Local.fResult.Declare
+V.Local.fResult2.Declare
+V.Local.bFEETorIN.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,=,"")
+	V.Passed.GAB-TEXT-2.Set("")
+	V.Passed.GAB-TEXT-3.Set("")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+'Check UM is a good UM
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.String.Build("select UM from GCG_5520_UM where UM like '{0}';",V.Passed.GAB-TEXT-1,V.Local.sSQL)
+F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+	'UM was not found
+	V.Passed.GAB-TEXT-1.Set("")
+F.Intrinsic.Control.Else
+	'UM found, update Qty and Price
+	F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,V.Local.sRet.Trim)
+		V.Passed.GAB-TEXT-1.Set(V.Local.sRet.Trim)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.SelectCase(V.Passed.GAB-TEXT-1.Trim)
+		F.Intrinsic.Control.Case("LOT")
+			'Lot Price, Qty = 1, Price = Price*Qty
+			F.Intrinsic.String.Format(1,"#,###,##0.0000",V.Local.sQty)
+			F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult)
+			F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sPrice)
+		F.Intrinsic.Control.Case("CFT")
+			'Hundredfoot, Qty = Master Length in feet/100 * Qty, Price = (Price*Qty)/(Master Length in feet/100 * Qty)
+			F.Intrinsic.String.Build("select LENGTH_RAW_MATL from V_INVENTORY_MSTR where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sRet,=,"0")
+				F.Intrinsic.String.Build("select LENGTH from V_INVENTORY_MST2 where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+				V.Local.bFEETorIN.Set(True)
+			F.Intrinsic.Control.Else
+				V.Local.bFEETorIN.Set(False)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+				V.Local.sQty.Set("")
+				V.Local.sPrice.Set("")
+				V.Passed.GAB-TEXT-1.Set("")
+				F.Intrinsic.UI.Msgbox("Could not resolve Part's Master Length")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Local.sRet.Float,<=,0)
+					'Length is not a usable number
+					V.Local.sQty.Set("")
+					V.Local.sPrice.Set("")
+					V.Passed.GAB-TEXT-1.Set("")
+					F.Intrinsic.UI.Msgbox("Part's Master Length is not a usable number")
+				F.Intrinsic.Control.Else
+					F.Intrinsic.Control.If(V.Local.bFEETorIN)
+						'Length and width is stored in inches, convert it to feet
+						F.Intrinsic.Math.Div(V.Local.sRet.Float,12,V.Local.sRet)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Div(V.Local.sRet.Float,100,V.Local.fResult)
+					F.Intrinsic.Math.Mult(V.Local.fResult,V.Global.fQty,V.Local.fResult)
+					F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sQty)
+					F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult2)
+					F.Intrinsic.Math.Div(V.Local.fResult2,V.Local.fResult,V.Local.fResult2)
+					F.Intrinsic.String.Format(V.Local.fResult2,"#,###,##0.0000",V.Local.sPrice)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Case("CWT")
+			'Hundredweight, Qty = Quote Weight/100, Price = (Price*Qty)/(Quote Weight/100)
+			F.Intrinsic.Control.If(V.Global.fWeight,<=,0)
+				'Quote weight is not a usable number
+				V.Local.sQty.Set("")
+				V.Local.sPrice.Set("")
+				V.Passed.GAB-TEXT-1.Set("")
+				F.Intrinsic.UI.Msgbox("Part's Quoted Weight is not a usable number")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Math.Div(V.Global.fWeight,100,V.Local.fResult)
+				F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sQty)
+				F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult2)
+				F.Intrinsic.Math.Div(V.Local.fResult2,V.Local.fResult,V.Local.fResult2)
+				F.Intrinsic.String.Format(V.Local.fResult2,"#,###,##0.0000",V.Local.sPrice)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Case("SQFT")
+			'Square feet, Qty = Master Length*Master Width in feet * Qty, Price = (Price*Qty)/(Length*Width in feet)
+			F.Intrinsic.String.Build("select LENGTH_RAW_MATL, WIDTH_RAW_MATL from V_INVENTORY_MSTR where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sRet,=,"0*!*0")
+				F.Intrinsic.String.Build("select LENGTH, WIDTH from V_INVENTORY_MST2 where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+				V.Local.bFEETorIN.Set(True)
+			F.Intrinsic.Control.Else
+				V.Local.bFEETorIN.Set(False)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+				V.Local.sQty.Set("")
+				V.Local.sPrice.Set("")
+				V.Passed.GAB-TEXT-1.Set("")
+				F.Intrinsic.UI.Msgbox("Could not resolve Part's Master Length and Width")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+				F.Intrinsic.Control.If(V.Local.sRet(0).Float,<=,0)
+					'Length is not a usable number
+					V.Local.sQty.Set("")
+					V.Local.sPrice.Set("")
+					V.Passed.GAB-TEXT-1.Set("")
+					F.Intrinsic.UI.Msgbox("Part's Master Length is not a usable number")
+				F.Intrinsic.Control.ElseIf(V.Local.sRet(1).Float,<=,0)
+					'Width is not a usable number
+					V.Local.sQty.Set("")
+					V.Local.sPrice.Set("")
+					V.Passed.GAB-TEXT-1.Set("")
+					F.Intrinsic.UI.Msgbox("Part's Master Width is not a usable number")
+				F.Intrinsic.Control.Else
+					F.Intrinsic.Math.Mult(V.Local.sRet(0).Float,V.Local.sRet(1).Float,V.Local.fResult)
+					V.Local.sRet.Redim(0,0)
+					F.Intrinsic.Control.If(V.Local.bFEETorIN)
+						'Length and width is stored in inches, convert it to feet
+						F.Intrinsic.Math.Div(V.Local.fResult,144,V.Local.fResult)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Mult(V.Local.fResult,V.Global.fQty,V.Local.fResult)
+					F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sQty)
+					F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult2)
+					F.Intrinsic.Math.Div(V.Local.fResult2,V.Local.fResult,V.Local.fResult2)
+					F.Intrinsic.String.Format(V.Local.fResult2,"#,###,##0.0000",V.Local.sPrice)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Case("FT")
+			'Feet, Qty = Master Length in feet * Qty, Price = (Price*Qty)/(Master Length in feet * Qty)
+			F.Intrinsic.String.Build("select LENGTH_RAW_MATL from V_INVENTORY_MSTR where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+			F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+			F.Intrinsic.Control.If(V.Local.sRet,=,"0")
+				F.Intrinsic.String.Build("select LENGTH from V_INVENTORY_MST2 where PART = '{0}' and LOCATION = '{1}';",V.Global.sPart,V.Global.sLoc,V.Local.sSQL)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+				V.Local.bFEETorIN.Set(True)
+			F.Intrinsic.Control.Else
+				V.Local.bFEETorIN.Set(False)
+			F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+				V.Local.sQty.Set("")
+				V.Local.sPrice.Set("")
+				V.Passed.GAB-TEXT-1.Set("")
+				F.Intrinsic.UI.Msgbox("Could not resolve Part's Length")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.Control.If(V.Local.sRet.Float,<=,0)
+					'Length is not a usable number
+					V.Local.sQty.Set("")
+					V.Local.sPrice.Set("")
+					V.Passed.GAB-TEXT-1.Set("")
+					F.Intrinsic.UI.Msgbox("Part's Master Length is not a usable number")
+				F.Intrinsic.Control.Else
+					F.Intrinsic.Control.If(V.Local.bFEETorIN)
+						'Length and width is stored in inches, convert it to feet
+						F.Intrinsic.Math.Div(V.Local.sRet.Float,12,V.Local.sRet)
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Mult(V.Local.sRet.Float,V.Global.fQty,V.Local.fResult)
+					F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sQty)
+					F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult2)
+					F.Intrinsic.Math.Div(V.Local.fResult2,V.Local.fResult,V.Local.fResult2)
+					F.Intrinsic.String.Format(V.Local.fResult2,"#,###,##0.0000",V.Local.sPrice)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Case("LBS")
+			'Weight, Qty = Quote Weight, Price = (Price*Qty)/(Quote Weight)
+			F.Intrinsic.Control.If(V.Global.fWeight,<=,0)
+				'Quote weight is not a usable number
+				V.Local.sQty.Set("")
+				V.Local.sPrice.Set("")
+				V.Passed.GAB-TEXT-1.Set("")
+				F.Intrinsic.UI.Msgbox("Part's Quoted Weight is not a usable number")
+			F.Intrinsic.Control.Else
+				F.Intrinsic.String.Format(V.Global.fWeight,"#,###,##0.0000",V.Local.sQty)
+				F.Intrinsic.Math.Mult(V.Global.fPrice,V.Global.fQty,V.Local.fResult)
+				F.Intrinsic.Math.Div(V.Local.fResult,V.Global.fWeight,V.Local.fResult)
+				F.Intrinsic.String.Format(V.Local.fResult,"#,###,##0.0000",V.Local.sPrice)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.CaseElse
+			'UM is not a correct UM that this program can parse, notify user
+			V.Local.sQty.Set("")
+			V.Local.sPrice.Set("")
+			V.Passed.GAB-TEXT-1.Set("")
+			F.Intrinsic.UI.Msgbox("UM is not setup to be used by this program")
+	F.Intrinsic.Control.EndSelect
+	V.Passed.GAB-TEXT-2.Set(V.Local.sQty)
+	V.Passed.GAB-TEXT-3.Set(V.Local.sPrice)
+F.Intrinsic.Control.EndIf
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.UpdateQtyAndPrice.End
+
+Program.Sub.UMTextBoxLostFocus.Start
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.CallSub(UpdateQtyAndPrice)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.UMTextBoxLostFocus.End
+
+Program.Sub.BRWButtonClicked.Start
+V.Local.sError.Declare
+V.Local.sRet.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.UI.Browser("Custom UMs","con","select UM, DESCRIPTION from GCG_5520_UM;","UM*!*Description","10*!*50",V.Local.sRet)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.If(V.Local.sRet.IsNotCancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	F.Intrinsic.Control.If(V.Passed.GAB-TEXT-1.Trim,!=,V.Local.sRet(0).Trim)
+		V.Passed.GAB-TEXT-1.Set(V.Local.sRet(0).Trim)
+		F.Intrinsic.Control.CallSub(UpdateQtyAndPrice)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.BRWButtonClicked.End
+
+Program.Sub.SaveCustomUM.Start
+V.Local.sError.Declare
+V.Local.sFile.Declare
+V.Local.sSQL.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.CallSub(PopulateAllOrderLines)
+
+F.Intrinsic.String.Build("{0}5520_CUSTOMUM_{1}_{2}",V.Caller.LocalGSSTempDir,V.Caller.Terminal,V.Caller.CompanyCode,V.Local.sFile)
+F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sFile)
+F.Intrinsic.String.Split(V.Local.sFile,V.Ambient.NewLine,V.Local.sFile)
+
+F.Intrinsic.String.Build("select ORDER_NO, LINE, UM, QTY, UNIT_PRICE from GCG_5520_ORD where ORDER_NO = '{0}' and LINE = '{1}';",V.Global.sOrder,V.Global.sLine,V.Local.sSQL)
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.ODBC.Connection!con.OpenRecordsetRW("rstOrdUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstOrdUM.EOF)
+	F.ODBC.con!rstOrdUM.AddNew
+	F.ODBC.con!rstOrdUM.Set!ORDER_NO(V.Global.sOrder)
+	F.ODBC.con!rstOrdUM.Set!LINE(V.Global.sLine)
+	F.ODBC.con!rstOrdUM.Set!UM("")
+	F.ODBC.con!rstOrdUM.Set!QTY(0)
+	F.ODBC.con!rstOrdUM.Set!UNIT_PRICE(0)
+	F.ODBC.con!rstOrdUM.Update
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.ODBC.con!rstOrdUM.FieldValLTrim!UM,!=,V.Local.sFile(0).Trim,"or",V.ODBC.con!rstOrdUM.FieldValLTrim!QTY,!=,V.Local.sFile(1).Float,V.ODBC.con!rstOrdUM.FieldValLTrim!UNIT_PRICE,!=,V.Local.sFile(2).Float)
+	F.ODBC.con!rstOrdUM.Set!UM(V.Local.sFile(0).Trim)
+	F.ODBC.con!rstOrdUM.Set!QTY(V.Local.sFile(1).Float)
+	F.ODBC.con!rstOrdUM.Set!UNIT_PRICE(V.Local.sFile(2).Float)
+	F.ODBC.con!rstOrdUM.Update
+F.Intrinsic.Control.EndIf
+F.ODBC.con!rstOrdUM.Close
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.SaveCustomUM.End
+
+Program.Sub.RecordCustomUMToFile.Start
+V.Local.sError.Declare
+V.Local.sFile.Declare
+V.Local.sFileString.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("{0}5520_CUSTOMUM_{1}_{2}",V.Caller.LocalGSSTempDir,V.Caller.Terminal,V.Caller.CompanyCode,V.Local.sFile)
+F.Intrinsic.String.Build("{1}{0}{2}{0}{3}",V.Ambient.NewLine,V.Passed.GAB-TEXT-1,V.Passed.GAB-TEXT-2,V.Passed.GAB-TEXT-3,V.Local.sFileString)
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sFileString)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.RecordCustomUMToFile.End
+
+Program.Sub.PopulateAllOrderLines.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+F.Intrinsic.Control.Try
+
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.String.Build("select ORDER_NO, LINE, UM, QTY, UNIT_PRICE from GCG_5520_ORD where ORDER_NO = '{0}' and LINE = '';",V.Global.sOrder,V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRW("rstOrdUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstOrdUM.EOF)
+	F.ODBC.con!rstOrdUM.AddNew
+	F.ODBC.con!rstOrdUM.Set!ORDER_NO(V.Global.sOrder)
+	F.ODBC.con!rstOrdUM.Set!LINE("")
+	F.ODBC.con!rstOrdUM.Set!UM("")
+	F.ODBC.con!rstOrdUM.Set!QTY(0)
+	F.ODBC.con!rstOrdUM.Set!UNIT_PRICE(0)
+	F.ODBC.con!rstOrdUM.Update
+F.Intrinsic.Control.Endif
+F.ODBC.con!rstOrdUM.Close
+F.Intrinsic.String.Build("select ORDER_NO, LINE, UM, QTY, UNIT_PRICE from GCG_5520_ORD where ORDER_NO = '{0}' and LINE = '   0';",V.Global.sOrder,V.Local.sSQL)
+F.ODBC.Connection!con.OpenRecordsetRW("rstOrdUM",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstOrdUM.EOF)
+	F.ODBC.con!rstOrdUM.AddNew
+	F.ODBC.con!rstOrdUM.Set!ORDER_NO(V.Global.sOrder)
+	F.ODBC.con!rstOrdUM.Set!LINE("   0")
+	F.ODBC.con!rstOrdUM.Set!UM("")
+	F.ODBC.con!rstOrdUM.Set!QTY(0)
+	F.ODBC.con!rstOrdUM.Set!UNIT_PRICE(0)
+	F.ODBC.con!rstOrdUM.Update
+F.Intrinsic.Control.Endif
+F.ODBC.con!rstOrdUM.Close
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.PopulateAllOrderLines.End
+
+Program.Sub.WriteQuoteNumberToFile.Start
+V.Local.sError.Declare
+V.Local.sFile.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("{0}GCG_5520_QuoteNum_for_QuoteWonLoss_{1}.data",V.Caller.LocalGSSTempDir,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.String2File(V.Local.sFile,V.Args.Quote)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.WriteQuoteNumberToFile.End
+
+Program.Sub.UpdateNewestSalesOrderCustomUM.Start
+V.Local.sError.Declare
+V.Local.sFile.Declare
+V.Local.sQuote.Declare
+V.Local.sSQL.Declare
+V.Local.iOrder.Declare
+V.Local.bFile.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("{0}GCG_5520_QuoteNum_for_QuoteWonLoss_{1}.data",V.Caller.LocalGSSTempDir,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bFile)
+F.Intrinsic.Control.If(V.Local.bFile)
+	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sQuote)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+	F.Intrinsic.String.Build("select ORDER_NO, 0 as HAS_UM from V_ORDER_HEADER where QUOTE = '{0}';",V.Local.sQuote,V.Local.sSQL)
+	F.ODBC.Connection!con.OpenCompanyConnection
+	F.Data.DataTable.CreateFromSQL("dtOrders","con",V.Local.sSQL)
+	F.Intrinsic.String.Build("select QUOTE, '' as ORDER_NO, LINE as Q_LINE, '' as LINE, UM, QTY, UNIT_PRICE from GCG_5520_QTE where QUOTE = '{0}';",V.Local.sQuote,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("dtQuoteUMs","con",V.Local.sSQL,True)
+	F.Intrinsic.Control.If(V.DataTable.dtOrders.RowCount,>,0)
+		F.Data.Dictionary.CreateFromSQL("dictOrderUMs","con","select ORDER_NO, 1 from GCG_5520_ORD where LINE = '';")
+		F.Data.Dictionary.SetDefaultReturn("dictOrderUMs",0)
+		F.Data.DataTable.FillFromDictionary("dtOrders","dictOrderUMs","ORDER_NO","HAS_UM")
+		F.Data.Dictionary.Close("dictOrderUMs")
+		F.Data.DataView.Create("dtOrders","dvNoUM",22,"HAS_UM = 0",)
+		F.Data.DataView.ToDataTable("dtOrders","dvNoUM","dtOrdersNoUM")
+		F.Data.DataTable.RemoveColumn("dtOrdersNoUM","HAS_UM")
+		F.Intrinsic.Control.For(V.Local.iOrder,0,V.DataTable.dtOrdersNoUM.RowCount--,1)
+			F.Intrinsic.String.Build("select ORIG_ORDER_LINE, RECORD_NO from V_ORDER_LINES where ORDER_NO = '{0}';",V.DataTable.dtOrdersNoUM(V.Local.iOrder).ORDER_NO!FieldVal,V.Local.sSQL)
+			F.Data.Dictionary.CreateFromSQL("dictQuoteLtoOrderL","con",V.Local.sSQL)
+			F.Data.DataTable.Clone("dtQuoteUMs","dtOrderUMs",True)
+			F.Data.DataTable.Merge("dtQuoteUMs","dtOrderUMs",True,2)
+			F.Data.DataTable.SetValue("dtOrderUMs",-1,"ORDER_NO",V.DataTable.dtOrdersNoUM(V.Local.iOrder).ORDER_NO!FieldVal)
+			F.Data.DataTable.FillFromDictionary("dtOrderUMs","dictQuoteLtoOrderL","Q_LINE","LINE")
+			F.Data.DataTable.RemoveColumn("dtOrderUMs","QUOTE")
+			F.Data.DataTable.RemoveColumn("dtOrderUMs","Q_LINE")
+			F.Data.DataTable.AddRow("dtOrderUMs","ORDER_NO",V.DataTable.dtOrdersNoUM(V.Local.iOrder).ORDER_NO!FieldVal,"LINE","   0","UM","","QTY",0,"UNIT_PRICE",0)
+			F.Data.DataTable.SaveToDB("dtOrderUMs","con","GCG_5520_ORD","ORDER_NO*!*LINE",256)
+			F.Data.DataTable.Close("dtOrderUMs")
+			F.Data.Dictionary.Close("dictQuoteLtoOrderL")
+		F.Intrinsic.Control.Next(V.Local.iOrder)
+		F.Data.DataTable.Close("dtOrdersNoUM")
+		F.Data.DataView.Close("dtOrders","dvNoUM")
+	F.Intrinsic.Control.EndIf
+	F.Data.DataTable.Close("dtQuoteUMs")
+	F.Data.DataTable.Close("dtOrders")
+	F.ODBC.Connection!con.Close
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.UpdateNewestSalesOrderCustomUM.End

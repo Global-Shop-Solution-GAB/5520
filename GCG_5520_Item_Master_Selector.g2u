@@ -1,0 +1,205 @@
+Program.Sub.ScreenSU.Start
+Gui.F_Item_Master_Select..Create
+Gui.F_Item_Master_Select..Size(7275,1755)
+Gui.F_Item_Master_Select..MinX(0)
+Gui.F_Item_Master_Select..MinY(0)
+Gui.F_Item_Master_Select..Position(0,0)
+Gui.F_Item_Master_Select..BackColor(-2147483633)
+Gui.F_Item_Master_Select..MaxButton(False)
+Gui.F_Item_Master_Select..MousePointer(0)
+Gui.F_Item_Master_Select..Sizeable(False)
+Gui.F_Item_Master_Select..Event(UnLoad,F_Item_Master_Select_UnLoad)
+Gui.F_Item_Master_Select.cmdBRW.Create(Button)
+Gui.F_Item_Master_Select.cmdBRW.Size(465,450)
+Gui.F_Item_Master_Select.cmdBRW.Position(180,825)
+Gui.F_Item_Master_Select.cmdBRW.Caption("^")
+Gui.F_Item_Master_Select.cmdBRW.Event(Click,cmdBRW_Click)
+Gui.F_Item_Master_Select.lblLot.Create(Label,"Lot",True,375,255,0,180,195,True,0,"Arial",8,-2147483633,0)
+Gui.F_Item_Master_Select.txtLot.Create(TextBox,"",True,1515,300,0,150,405,True,0,"Arial",8,-2147483643,1)
+Gui.F_Item_Master_Select.txtLot.Locked(True)
+Gui.F_Item_Master_Select.lblBin.Create(Label,"Bin",True,480,255,0,1890,195,True,0,"Arial",8,-2147483633,0)
+Gui.F_Item_Master_Select.txtBin.Create(TextBox,"",True,975,300,0,1860,405,True,0,"Arial",8,-2147483643,1)
+Gui.F_Item_Master_Select.txtBin.Locked(True)
+Gui.F_Item_Master_Select.lblHeat.Create(Label,"Heat",True,525,255,0,3045,195,True,0,"Arial",8,-2147483633,0)
+Gui.F_Item_Master_Select.txtHeat.Create(TextBox,"",True,1515,300,0,3015,405,True,0,"Arial",8,-2147483643,1)
+Gui.F_Item_Master_Select.txtHeat.Locked(True)
+Gui.F_Item_Master_Select.lblSerial.Create(Label,"Serial",True,600,255,0,4755,195,True,0,"Arial",8,-2147483633,0)
+Gui.F_Item_Master_Select.txtSerial.Create(TextBox,"",True,2310,300,0,4725,405,True,0,"Arial",8,-2147483643,1)
+Gui.F_Item_Master_Select.txtSerial.Locked(True)
+Gui.F_Item_Master_Select.cmdImport.Create(Button)
+Gui.F_Item_Master_Select.cmdImport.Size(1035,450)
+Gui.F_Item_Master_Select.cmdImport.Position(5955,825)
+Gui.F_Item_Master_Select.cmdImport.Caption("Import")
+Gui.F_Item_Master_Select.cmdImport.Event(Click,cmdImport_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+V.Global.sPart.Declare
+V.Global.sLocn.Declare
+V.Global.sOrder.Declare
+V.Global.sLine.Declare
+V.Global.fQty.Declare(Float,-1)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Author: Bix
+'Date: 5/7/2019
+'Brunswick Steel
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Caller.Hook,=,12010)
+	V.Passed.000162.Set("Select Lot/Bin")
+F.Intrinsic.Control.ElseIf(V.Caller.Hook,=,12410)
+	F.Intrinsic.Control.SelectCase(V.Caller.Switches)
+		F.Intrinsic.Control.CaseAny("O","N")
+			F.Intrinsic.String.LPad(V.Passed.000060,"0",6,V.Global.sOrder)
+			F.Intrinsic.String.LPad(V.Passed.000051,"0",3,V.Global.sLine)
+			F.Intrinsic.String.Build("{0}0",V.Global.sLine,V.Global.sLine)
+			V.Global.sLocn.Set(V.Passed.000054)
+			F.Intrinsic.String.GSSPartString(V.Passed.000052.Trim,V.Passed.000053.Trim,V.Global.sPart)
+			F.Intrinsic.Control.CallSub(OpenItemMasterSelector)
+	F.Intrinsic.Control.EndSelect
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.OpenItemMasterSelector.Start
+V.Local.sError.Declare
+V.Local.sCaption.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Global.sPart.Trim,=,"")
+	'No part on screen, exit
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.Build("Item Master Selector, Part: {0} Locn: {1}",V.Global.sPart.Trim,V.Global.sLocn.Trim,V.Local.sCaption)
+Gui.F_Item_Master_Select..Caption(V.Local.sCaption)
+
+Gui.F_Item_Master_Select..Show
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.OpenItemMasterSelector.End
+
+Program.Sub.F_Item_Master_Select_UnLoad.Start
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.F_Item_Master_Select_UnLoad.End
+
+Program.Sub.cmdBRW_Click.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sRet.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.String.Build("select LOT, BIN, HEAT, SERIAL_NUMBER, QUANTITY from V_ITEM_MASTER where PART = '{0}' and LOCATION = '{1}' and SERIAL_NUMBER <> '';",V.Global.sPart,V.Global.sLocn,V.Local.sSQL)
+F.ODBC.Connection!con.OpenCompanyConnection
+F.Intrinsic.UI.Browser("Lot/Bin Records","con",V.Local.sSQL,"Lot*!*Bin*!*Heat*!*Serial*!*Quantity","50*!*25*!*50*!*100*!*50",V.Local.sRet)
+F.ODBC.Connection!con.Close
+
+F.Intrinsic.Control.If(V.Local.sRet.IsNotCancel)
+	F.Intrinsic.String.Split(V.Local.sRet,"*!*",V.Local.sRet)
+	Gui.F_Item_Master_Select.txtLot.Text(V.Local.sRet(0))
+	Gui.F_Item_Master_Select.txtBin.Text(V.Local.sRet(1))
+	Gui.F_Item_Master_Select.txtHeat.Text(V.Local.sRet(2))
+	Gui.F_Item_Master_Select.txtSerial.Text(V.Local.sRet(3))
+	V.Global.fQty.Set(V.Local.sRet(4).Float)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdBRW_Click.End
+
+Program.Sub.cmdImport_Click.Start
+V.Local.sError.Declare
+V.Local.sSQL.Declare
+V.Local.sNotes.Declare
+F.Intrinsic.Control.Try
+
+F.Intrinsic.Control.If(V.Global.fQty,=,-1)
+	F.Intrinsic.UI.Msgbox("Please select a Lot/Bin record if one exists.")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+Gui.F_Item_Master_Select..Visible(False)
+
+F.Intrinsic.Control.CallSub(SetOrderLineQty,"Qty",V.Global.fQty)
+
+F.Intrinsic.String.Build("select ORDER_NUM, ORDER_LINE, ORDER_TYPE, TEXT from ORDER_LN_TEXT where ORDER_NUM = '{0}' and ORDER_LINE = '{1}';",V.Global.sOrder,V.Global.sLine,V.Local.sSQL)
+
+F.Intrinsic.Control.If(V.Screen.F_Item_Master_Select!txtLot.Text,!=,"")
+	F.Intrinsic.String.Build("Lot: {0}",V.Screen.F_Item_Master_Select!txtLot.Text,V.Local.sNotes)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Item_Master_Select!txtBin.Text,!=,"")
+	F.Intrinsic.Control.If(V.Local.sNotes,!=,"")
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sNotes,V.Ambient.NewLine,V.Local.sNotes)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("Bin: {0}",V.Screen.F_Item_Master_Select!txtBin.Text,V.Local.sNotes)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Item_Master_Select!txtHeat.Text,!=,"")
+	F.Intrinsic.Control.If(V.Local.sNotes,!=,"")
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sNotes,V.Ambient.NewLine,V.Local.sNotes)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("Heat: {0}",V.Screen.F_Item_Master_Select!txtHeat.Text,V.Local.sNotes)
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.If(V.Screen.F_Item_Master_Select!txtSerial.Text,!=,"")
+	F.Intrinsic.Control.If(V.Local.sNotes,!=,"")
+		F.Intrinsic.String.Build("{0}{1}",V.Local.sNotes,V.Ambient.NewLine,V.Local.sNotes)
+	F.Intrinsic.Control.EndIf
+	F.Intrinsic.String.Build("Serial Number: {0}",V.Screen.F_Item_Master_Select!txtSerial.Text,V.Local.sNotes)
+F.Intrinsic.Control.EndIf
+
+'Search for Order Line Text to see if it needs to be inserted or replaced
+F.ODBC.Connection!con.OpenRecordsetRW("rstNotes",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.con!rstNotes.EOF)
+	F.ODBC.con!rstNotes.AddNew
+	F.ODBC.con!rstNotes.Set!ORDER_NUM(V.Global.sOrder)
+	F.ODBC.con!rstNotes.Set!ORDER_LINE(V.Global.sLine)
+	F.ODBC.con!rstNotes.Set!ORDER_TYPE(2)
+F.Intrinsic.Control.Endif
+F.ODBC.con!rstNotes.Set!TEXT(V.Local.sNotes)
+F.ODBC.con!rstNotes.Update
+F.ODBC.con!rstNotes.Close
+
+F.Intrinsic.Control.CallSub(F_Item_Master_Select_UnLoad)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.cmdImport_Click.End
+
+Program.Sub.SetOrderLineQty.Start
+V.Local.sError.Declare
+F.Intrinsic.Control.Try
+
+V.Passed.000007.Set(V.Args.Qty)
+
+F.Intrinsic.Control.Catch
+	F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Caller.ScriptFile,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.SetOrderLineQty.End
